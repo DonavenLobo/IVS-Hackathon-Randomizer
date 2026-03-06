@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, History as HistoryIcon, LayoutGrid, Plus, Trash2, ChevronRight, Sparkles, Check } from "lucide-react";
 import Background3D from "./components/Background3D";
+import { supabase } from "./supabaseClient";
 
 const DEFAULT_INDUSTRIES = {
   "Healthcare & Life Sciences": ["Hospital Systems & Clinical Care", "Pharmaceuticals & Drug Development", "Medical Devices & Diagnostics", "Mental Health & Behavioral Services", "Telemedicine & Digital Health", "Elder Care & Assisted Living", "Health Insurance & Benefits", "Veterinary Medicine"],
@@ -100,6 +101,31 @@ export default function HackathonRandomizer() {
   const [newIndustry, setNewIndustry] = useState("");
   const [newSector, setNewSector] = useState("");
   const cInd = useRef(null);
+  const [dbReady, setDbReady] = useState(false);
+
+  // Load history and custom sectors from Supabase on mount
+  useEffect(() => {
+    async function load() {
+      const [{ data: histData }, { data: sectorData }] = await Promise.all([
+        supabase.from("roll_history").select("*").order("rolled_at", { ascending: false }),
+        supabase.from("custom_sectors").select("*"),
+      ]);
+      if (histData && histData.length > 0) {
+        setHistory(histData.map(h => ({
+          industry: h.industry, sector: h.sector, level: h.level, tag: h.tag, color: h.color,
+          date: new Date(h.rolled_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+          id: h.id, dbId: h.id,
+        })));
+      }
+      if (sectorData && sectorData.length > 0) {
+        const custom = {};
+        sectorData.forEach(s => { custom[s.sector] = s.industries; });
+        setSectors(custom);
+      }
+      setDbReady(true);
+    }
+    load();
+  }, []);
 
   // Slot reel state
   const slotContainerRef = useRef(null);
@@ -166,14 +192,33 @@ export default function HackathonRandomizer() {
     return () => { if (slotAnimRef.current) cancelAnimationFrame(slotAnimRef.current) };
   }, []);
 
-  const lockIn = () => {
+  const lockIn = async () => {
     if (!industry || !level) return;
-    setHistory(p => [{
+    const entry = {
       industry: industry.name, sector: industry.sector, level: level.label, tag: level.tag, color: level.color,
-      date: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }), id: Date.now()
-    }, ...p]);
+    };
+    const { data } = await supabase.from("roll_history").insert(entry).select().single();
+    const histEntry = {
+      ...entry,
+      date: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      id: data?.id || Date.now(), dbId: data?.id,
+    };
+    setHistory(p => [histEntry, ...p]);
     setIndustry(null); setLevel(null); setDisplayInd(null); setIndLanded(false); setLvlLanded(false); setSlotOffset(0);
   };
+
+  // Persist sectors to Supabase whenever they change (after initial load)
+  const saveSectorsRef = useRef(false);
+  useEffect(() => {
+    if (!dbReady) return;
+    if (!saveSectorsRef.current) { saveSectorsRef.current = true; return; }
+    async function save() {
+      await supabase.from("custom_sectors").delete().neq("id", 0);
+      const rows = Object.entries(sectors).map(([sector, industries]) => ({ sector, industries }));
+      if (rows.length > 0) await supabase.from("custom_sectors").insert(rows);
+    }
+    save();
+  }, [sectors, dbReady]);
 
   const removeIndustry = (sec, ind) => setSectors(p => { const u = { ...p }; u[sec] = u[sec].filter(i => i !== ind); if (!u[sec].length) delete u[sec]; return u });
   const addIndustry = sec => { if (!newIndustry.trim()) return; setSectors(p => ({ ...p, [sec]: [...(p[sec] || []), newIndustry.trim()] })); setNewIndustry("") };
@@ -467,7 +512,7 @@ export default function HackathonRandomizer() {
               )}
               {history.length > 0 && (
                 <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  onClick={() => setHistory([])} style={{
+                  onClick={() => { supabase.from("roll_history").delete().neq("id", 0); setHistory([]); }} style={{
                     marginTop: 24, padding: "12px 24px", fontSize: 12, fontWeight: 600,
                     background: "transparent", border: "1.5px solid rgba(180,170,155,0.3)",
                     borderRadius: 30, color: "#a89a86", cursor: "pointer", fontFamily: font,
@@ -572,7 +617,7 @@ export default function HackathonRandomizer() {
 
               <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
                 <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                  onClick={() => setSectors(DEFAULT_INDUSTRIES)} style={{
+                  onClick={() => { supabase.from("custom_sectors").delete().neq("id", 0); setSectors(DEFAULT_INDUSTRIES); }} style={{
                     padding: "12px 24px", fontSize: 12, fontWeight: 600,
                     background: "transparent", border: "1.5px solid rgba(180,170,155,0.3)",
                     borderRadius: 30, color: "#a89a86", cursor: "pointer", fontFamily: font,
