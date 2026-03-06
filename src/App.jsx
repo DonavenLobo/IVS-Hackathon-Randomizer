@@ -3,26 +3,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, History as HistoryIcon, LayoutGrid, Plus, Trash2, ChevronRight, Sparkles, Check } from "lucide-react";
 import Background3D from "./components/Background3D";
+import { DEFAULT_INDUSTRIES } from "./industries";
 import { supabase } from "./supabaseClient";
-
-const DEFAULT_INDUSTRIES = {
-  "Healthcare & Life Sciences": ["Hospital Systems & Clinical Care", "Pharmaceuticals & Drug Development", "Medical Devices & Diagnostics", "Mental Health & Behavioral Services", "Telemedicine & Digital Health", "Elder Care & Assisted Living", "Health Insurance & Benefits", "Veterinary Medicine"],
-  "Agriculture & Food": ["Crop Farming & Agronomy", "Livestock & Animal Husbandry", "Food Processing & Packaging", "Restaurant & Food Service", "Grocery & Food Retail", "Agricultural Equipment & Technology", "Aquaculture & Fisheries", "Organic & Specialty Foods"],
-  "Energy & Utilities": ["Oil & Gas Exploration", "Solar & Wind Energy", "Nuclear Power", "Electric Utilities & Grid Management", "Water Treatment & Distribution", "Battery & Energy Storage", "Carbon Capture & Climate Tech"],
-  "Financial Services": ["Retail Banking", "Investment Management & Wealth", "Insurance (Property & Casualty)", "Payments & Fintech", "Lending & Credit", "Cryptocurrency & Digital Assets", "Accounting & Audit Services"],
-  "Manufacturing & Industrial": ["Automotive Manufacturing", "Aerospace & Defense", "Semiconductor Fabrication", "Chemical Manufacturing", "Textiles & Apparel Production", "Industrial Automation & Robotics", "Steel & Metals", "3D Printing & Additive Manufacturing"],
-  "Technology & Software": ["Enterprise SaaS", "Cybersecurity", "Cloud Infrastructure", "AI & Machine Learning", "Gaming & Interactive Entertainment", "Developer Tools & Platforms", "IoT & Embedded Systems"],
-  "Transportation & Logistics": ["Freight & Trucking", "Maritime Shipping", "Airlines & Aviation", "Last-Mile Delivery", "Public Transit Systems", "Warehousing & Fulfillment", "Autonomous Vehicles"],
-  "Real Estate & Construction": ["Residential Development", "Commercial Real Estate", "Construction & General Contracting", "Property Management", "Architecture & Design", "Building Materials & Supplies", "Smart Buildings & PropTech"],
-  "Education & Training": ["K-12 Education", "Higher Education & Universities", "Corporate Training & L&D", "EdTech & Online Learning", "Vocational & Trade Schools", "Tutoring & Test Preparation", "Early Childhood Education"],
-  "Media & Entertainment": ["Film & Television Production", "Music & Audio", "Publishing & Journalism", "Advertising & Marketing", "Sports & Live Events", "Podcasting & Creator Economy", "Museums & Cultural Institutions"],
-  "Government & Public Sector": ["Defense & National Security", "Municipal Services & Local Gov", "Tax & Revenue Administration", "Public Health & Epidemiology", "Elections & Civic Tech", "Parks & Natural Resources"],
-  "Retail & Consumer": ["E-commerce & Marketplaces", "Luxury Goods & Fashion", "Home Improvement & Hardware", "Consumer Electronics", "Beauty & Personal Care", "Pet Products & Services", "Subscription & DTC Brands"],
-  "Professional Services": ["Legal Services & Law Firms", "Management Consulting", "Staffing & Recruitment", "Engineering & Design Firms", "Research & Analytics", "Translation & Localization"],
-  "Telecom & Connectivity": ["Wireless Carriers & 5G", "Internet Service Providers", "Satellite Communications", "Networking & Infrastructure"],
-  "Environment & Sustainability": ["Waste Management & Recycling", "Environmental Consulting", "Sustainable Materials & Packaging", "Carbon Markets & Offsets"],
-  "Travel & Hospitality": ["Hotels & Resorts", "Travel Booking & Agencies", "Cruise Lines", "Outdoor Recreation & Adventure", "Event Planning & Conferences"],
-};
 
 const CUSTOMER_LEVELS = [
   { id: "primary", label: "Primary", tag: "B2C", description: "Direct to end users — you're building for the people who actually use the product or service.", color: "#5a9e6f", accent: "#e8f5ec" },
